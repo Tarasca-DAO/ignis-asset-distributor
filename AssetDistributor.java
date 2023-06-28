@@ -70,16 +70,27 @@ public class AssetDistributor extends AbstractContract {
         int chainId = contractParams.chainId();
         int frequency = contractParams.frequency();
         String assetPayingIgnis = contractParams.assetPayingIgnis();
+        String assetPayingIgnisSmall = contractParams.assetPayingIgnisSmall();
         String assetPayingGem = contractParams.assetPayingGem();
+        String assetSasquatch = contractParams.assetSasquatch();
+        String assetMaru = contractParams.assetMaru();
         String gemAssetId = contractParams.gemAssetId();
         long gemToDistribute = contractParams.gemToDistribute()*IGNIS.ONE_COIN;
         int deadline = contractParams.deadline();
+        int dividendsDelay = 60;
 
         int height = context.getHeight();
         int modulo = height % frequency;
         int nextJackpotHeight = height - modulo + frequency;
 
-        long STAYINACCOUNT = 20*IGNIS.ONE_COIN;
+        long STAYINACCOUNT = 30*IGNIS.ONE_COIN;
+
+        //double ratioSmallCard = contractParams.ratioSmallCard();
+        //double ratioLargeCard = 1-(ratioSmallCard*2);
+        double ratioTarasca = 0.57;
+        double ratioMaru = 0.14;
+        double ratioSasquatch = 0.14;
+        double ratioMara = 0.14;
 
         int lastJackpotHeight;
         if (modulo == 0 & height != 0) {
@@ -92,28 +103,77 @@ public class AssetDistributor extends AbstractContract {
         if(frequency < deadline)
             return context.generateErrorResponse(20001,"frequency is smaller than distance to jackpot block, adjust configuration");
 
-        if (modulo == deadline) {
+        if (modulo == dividendsDelay) {
 
             int executionHeight = height - 1;
 
             JO response = GetBalanceCall.create(chainId).account(context.getAccountRs()).height(lastJackpotHeight).call();
             long balance = response.getLong("balanceNQT");
-
-            long assetsInCirculation = getAssetsInCirculation(context.getAccountRs(),assetPayingIgnis,executionHeight);
             long payout = balance - STAYINACCOUNT;
-            long ignisPerShare = payout/assetsInCirculation;
+
+            // Asset Paying Ignis  = Tarasca Card
+            long assetsInCirculation = getAssetsInCirculation(context.getAccountRs(),assetPayingIgnis,executionHeight);
+            long payoutLarge =  (long) ((double) payout*ratioTarasca);
+            long ignisPerShareLarge = payoutLarge/assetsInCirculation;
 
             context.logInfoMessage("creating Ignis transaction for parameters: jackpotHeight: %d, balance: %d, assetsInCirculation: %d, payout: %d, ignisPerShare: %d",
-                    lastJackpotHeight,balance,assetsInCirculation,payout,ignisPerShare);
+                    lastJackpotHeight,balance,assetsInCirculation,payoutLarge,ignisPerShareLarge);
 
-            DividendPaymentCall dividendPaymentCallIgnis = DividendPaymentCall.create(chainId)
+            DividendPaymentCall dividendPaymentCallIgnisLarge = DividendPaymentCall.create(chainId)
                     .asset(assetPayingIgnis)
                     .holdingType((byte) 0)
-                    .amountNQTPerShare(ignisPerShare)
+                    .amountNQTPerShare(ignisPerShareLarge)
                     .height(executionHeight)
                     .deadline(deadline);
-            context.createTransaction(dividendPaymentCallIgnis);
+            context.createTransaction(dividendPaymentCallIgnisLarge);
 
+            // Asset Paying Ignis (Small) = Mari
+            long assetsInCirculationSmall = getAssetsInCirculation(context.getAccountRs(),assetPayingIgnisSmall,executionHeight);
+            long payoutSmall =  (long) ((double) payout*ratioMara);
+            long ignisPerShareSmall = payoutSmall/assetsInCirculationSmall;
+            context.logInfoMessage("creating Ignis transaction for parameters: jackpotHeight: %d, balance: %d, assetsInCirculation: %d, payout: %d, ignisPerShare: %d",
+                    lastJackpotHeight,balance,assetsInCirculationSmall,payoutSmall,ignisPerShareSmall);
+
+            DividendPaymentCall dividendPaymentCallIgnisSmall = DividendPaymentCall.create(chainId)
+                    .asset(assetPayingIgnisSmall)
+                    .holdingType((byte) 0)
+                    .amountNQTPerShare(ignisPerShareSmall)
+                    .height(executionHeight)
+                    .deadline(deadline);
+            context.createTransaction(dividendPaymentCallIgnisSmall);
+
+            // Asset Paying Ignis Sasquatch
+            long assetsInCirculationSasquatch = getAssetsInCirculation(context.getAccountRs(),assetSasquatch,executionHeight);
+            long payoutSasquatch =  (long) ((double) payout*ratioSasquatch);
+            long ignisPerShareSasquatch = payoutSasquatch/assetsInCirculationSasquatch;
+            context.logInfoMessage("creating Ignis transaction for parameters: jackpotHeight: %d, balance: %d, assetsInCirculation: %d, payout: %d, ignisPerShare: %d",
+                    lastJackpotHeight,balance,assetsInCirculationSasquatch,payoutSasquatch,ignisPerShareSasquatch);
+
+            DividendPaymentCall dividendPaymentCallSasquatch = DividendPaymentCall.create(chainId)
+                    .asset(assetSasquatch)
+                    .holdingType((byte) 0)
+                    .amountNQTPerShare(ignisPerShareSasquatch)
+                    .height(executionHeight)
+                    .deadline(deadline);
+            context.createTransaction(dividendPaymentCallSasquatch);
+
+            // Asset Paying Ignis Maru
+            long assetsInCirculationMaru = getAssetsInCirculation(context.getAccountRs(),assetMaru,executionHeight);
+            long payoutMaru =  (long) ((double) payout*ratioMaru);
+            long ignisPerShareMaru = payoutMaru/assetsInCirculationMaru;
+            context.logInfoMessage("creating Ignis transaction for parameters: jackpotHeight: %d, balance: %d, assetsInCirculation: %d, payout: %d, ignisPerShare: %d",
+                    lastJackpotHeight,balance,assetsInCirculationMaru,payoutMaru,ignisPerShareMaru);
+
+            DividendPaymentCall dividendPaymentCallMaru = DividendPaymentCall.create(chainId)
+                    .asset(assetMaru)
+                    .holdingType((byte) 0)
+                    .amountNQTPerShare(ignisPerShareMaru)
+                    .height(executionHeight)
+                    .deadline(deadline);
+            context.createTransaction(dividendPaymentCallMaru);
+
+
+            // Asset Paying Gem = Groot
             long assetsInCirculationGem = getAssetsInCirculation(context.getAccountRs(),assetPayingGem,executionHeight);
             long gemPerShare = gemToDistribute/assetsInCirculationGem;
 
@@ -131,13 +191,68 @@ public class AssetDistributor extends AbstractContract {
 
             return context.getResponse();
         }
+        else if (modulo == (dividendsDelay + 120)) {
+            context.logInfoMessage("Block for second Mari,Sasquatch dividend payment (Gem)");
+            int executionHeight = height - 1;
+
+            // Asset Paying Ignis (Small) = Mari
+            long assetsInCirculationSmall = getAssetsInCirculation(context.getAccountRs(),assetPayingIgnisSmall,executionHeight);
+            long gemPerShareSmall = 1000*IGNIS.ONE_COIN/assetsInCirculationSmall;
+
+            context.logInfoMessage("creating GEM transaction for parameters: gemToDistribute: %d, assetsInCirculationGem: %d, gemPerShare: %d",
+                    1000*IGNIS.ONE_COIN,assetsInCirculationSmall,gemPerShareSmall);
+
+            DividendPaymentCall dividendPaymentCallGemSmall = DividendPaymentCall.create(chainId)
+                    .asset(assetPayingIgnisSmall)
+                    .holdingType((byte) 1)
+                    .holding(gemAssetId)
+                    .amountNQTPerShare(gemPerShareSmall)
+                    .height(executionHeight)
+                    .deadline(deadline);
+            context.createTransaction(dividendPaymentCallGemSmall);
+
+            // Asset Sasquatch, GEM payout
+            long assetsInCirculationSasquatch = getAssetsInCirculation(context.getAccountRs(),assetSasquatch,executionHeight);
+            long gemPerShareSasquatch = 1000*IGNIS.ONE_COIN/assetsInCirculationSasquatch;
+
+            context.logInfoMessage("creating GEM transaction for parameters: gemToDistribute: %d, assetsInCirculationGem: %d, gemPerShare: %d",
+                    1000*IGNIS.ONE_COIN,assetsInCirculationSasquatch,gemPerShareSasquatch);
+
+            DividendPaymentCall dividendPaymentCallSasquatch = DividendPaymentCall.create(chainId)
+                    .asset(assetSasquatch)
+                    .holdingType((byte) 1)
+                    .holding(gemAssetId)
+                    .amountNQTPerShare(gemPerShareSasquatch)
+                    .height(executionHeight)
+                    .deadline(deadline);
+            context.createTransaction(dividendPaymentCallSasquatch);
+
+            // Asset Maru, GEM payout
+            long assetsInCirculationMaru = getAssetsInCirculation(context.getAccountRs(),assetMaru,executionHeight);
+            long gemPerShareMaru = 1000*IGNIS.ONE_COIN/assetsInCirculationMaru;
+
+            context.logInfoMessage("creating GEM transaction for parameters: gemToDistribute: %d, assetsInCirculationGem: %d, gemPerShare: %d",
+                    1000*IGNIS.ONE_COIN,assetsInCirculationMaru,gemPerShareMaru);
+
+            DividendPaymentCall dividendPaymentCallMaru = DividendPaymentCall.create(chainId)
+                    .asset(assetMaru)
+                    .holdingType((byte) 1)
+                    .holding(gemAssetId)
+                    .amountNQTPerShare(gemPerShareMaru)
+                    .height(executionHeight)
+                    .deadline(deadline);
+            context.createTransaction(dividendPaymentCallMaru);
+
+
+            return context.getResponse();
+        }
         else {
             int nextPayoutHeight;
 
-            if (modulo<deadline)
-                nextPayoutHeight=lastJackpotHeight+deadline;
+            if (modulo<dividendsDelay)
+                nextPayoutHeight=lastJackpotHeight+dividendsDelay;
             else
-                nextPayoutHeight=nextJackpotHeight+deadline;
+                nextPayoutHeight=nextJackpotHeight+dividendsDelay;
 
             return context.generateInfoResponse("no height to pay out dividends (current height: %d, last jackpot : %d, next jackpot: %d, next payout: %d)",
                     height,lastJackpotHeight, nextJackpotHeight, nextPayoutHeight);
@@ -177,12 +292,24 @@ public class AssetDistributor extends AbstractContract {
         default String assetPayingIgnis() { return "13187825386854631652";}
 
         @ContractRunnerParameter
+        default String assetPayingIgnisSmall() { return "16453401161130674677";}
+
+        @ContractRunnerParameter
         default String assetPayingGem() { return "14906207210027210012";}
+
+        @ContractRunnerParameter
+        default String assetSasquatch() { return "8504616031553931056";}
+
+        @ContractRunnerParameter
+        default String assetMaru() { return "3651682276536707874";}
 
         @ContractRunnerParameter
         default long gemToDistribute() {return 3000;}
 
         @ContractRunnerParameter
-        default int deadline() {return 60;}
+        default int deadline() {return 900;}
+
+        @ContractRunnerParameter
+        default double ratioSmallCard() { return 0.166; }
     }
 }
